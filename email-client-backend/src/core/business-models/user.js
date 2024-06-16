@@ -17,7 +17,7 @@ exports.createUser = async (email, password) => {
         id: userId,
         body: user
     });
-    console.log(user);
+
     return user;
 };
 
