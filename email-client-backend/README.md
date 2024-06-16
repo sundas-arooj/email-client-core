@@ -11,7 +11,7 @@ This application allows users to register and log in using their Outlook account
 - Real-time updates using webhooks
 - RESTful API endpoints for user registration and email retrieval
 
-## Installation and Running
+## Setup
 
 1. Clone the repository:
 
@@ -34,7 +34,7 @@ Create and configure the .env file in root directory
     ```bash
     npm start
     
-    Server is running on [http://localhost:3000](http://localhost:3000)
+Server is running on [http://localhost:3000](http://localhost:3000)
 
 ## Environment Variables
 Ensure you have a `.env` file with the following variables:

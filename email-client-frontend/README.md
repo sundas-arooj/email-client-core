@@ -9,7 +9,7 @@ This is Email Client Frontend repository! This is the frontend application for m
 - Display of synchronized email data
 - Real-time updates for email changes
 
-## Installation
+## Setup
 
 1. Clone the repository:
 
