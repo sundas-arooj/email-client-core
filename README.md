@@ -1,7 +1,7 @@
 # Email Client Core
 
 ## Overview
-The Email Client project is a full-stack application that allows users to register and log in using their Outlook accounts, sync their email data with an Elasticsearch database, and monitor real-time changes in their inbox using webhooks. The frontend is built with React, providing a user-friendly interface, while the backend is powered by Node.js and Express, handling authentication, data synchronization, and real-time updates.
+The Email Client project is a full-stack application that allows users to register and log in using their Outlook accounts, sync their email data with an Elasticsearch database, and monitor real-time changes in their inbox using webhooks.
 
 ## Setup
 1. Clone the repository:
