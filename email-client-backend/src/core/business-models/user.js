@@ -72,3 +72,21 @@ exports.fetchUserByEmail = async (email) => {
     }
     return result.hits.hits[0]._source;
 };
+
+exports.fetchAllUsers = async () => {
+    try {
+      const result = await elasticsearch.search({
+        index: 'users',
+        body: {
+          query: {
+            match_all: {}
+          }
+        }
+      });
+  
+      return result.hits.hits.map(hit => hit._source);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      throw error;
+    }
+  };

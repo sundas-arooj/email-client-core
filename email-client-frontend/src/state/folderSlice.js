@@ -1,13 +1,13 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { fetchEmails } from '../utils/api';
+import { fetchFolders } from '../utils/api';
 
-export const loadEmails = createAsyncThunk('emails/loadEmails', async (email, folderId) => {
-    const response = await fetchEmails(email, folderId);
+export const loadFolders = createAsyncThunk('folders/loadFolders', async (email) => {
+    const response = await fetchFolders(email);
     return response;
 });
 
-const emailSlice = createSlice({
-    name: 'emails',
+const folderSlice = createSlice({
+    name: 'folders',
     initialState: {
         items: [],
         status: 'idle',
@@ -16,18 +16,18 @@ const emailSlice = createSlice({
     reducers: {},
     extraReducers: (builder) => {
         builder
-            .addCase(loadEmails.pending, (state) => {
+            .addCase(loadFolders.pending, (state) => {
                 state.status = 'loading';
             })
-            .addCase(loadEmails.fulfilled, (state, action) => {
+            .addCase(loadFolders.fulfilled, (state, action) => {
                 state.status = 'succeeded';
                 state.items = action.payload;
             })
-            .addCase(loadEmails.rejected, (state, action) => {
+            .addCase(loadFolders.rejected, (state, action) => {
                 state.status = 'failed';
                 state.error = action.error.message;
             });
     },
 });
 
-export default emailSlice.reducer;
+export default folderSlice.reducer;

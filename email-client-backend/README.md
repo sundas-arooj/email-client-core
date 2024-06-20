@@ -1,7 +1,7 @@
 # Email Client Backend
 
 ## Overview
-This application allows users to register and log in using their Outlook accounts, sync their email data with an Elasticsearch database, and monitor real-time changes in their inbox using webhooks. It utilizes OAuth2 for authentication, the Microsoft Graph API for accessing email data, and Elasticsearch for storing and indexing emails.
+This application allows users to register and log in using their Outlook accounts, sync their email data with an Elasticsearch database, and monitor real-time changes in their inbox using webhooks, along with webhook it frequently update emails data for all users using cron job. It utilizes OAuth2 for authentication, the Microsoft Graph API for accessing email data, and Elasticsearch for storing and indexing emails.
 
 
 ## Features
@@ -9,6 +9,7 @@ This application allows users to register and log in using their Outlook account
 - OAuth authentication with Outlook
 - Syncing email data to Elasticsearch
 - Real-time updates using webhooks
+- Cron job for frequent syncing of data
 - RESTful API endpoints for user registration and email retrieval
 
 ## Setup
@@ -134,8 +135,8 @@ Ensure you have a `.env` file with the following variables:
    - **Description**: Retrieves the tokens for a user from Elasticsearch.
    - **Parameters**: `email` (string)
 
-4. **getOutlookEmails**
-   - **Description**: Get the latest emails from the user's inbox to Elasticsearch.
+4. **fetchAllEmails**
+   - **Description**: Get the latest emails from the user's mailboxes and store it to Elasticsearch.
    - **Parameters**: `accessToken` (string), `email` (string)
 
 5. **createSubscription**

@@ -4,6 +4,7 @@ require('isomorphic-fetch');
 
 const emailModel = require('../business-models/email');
 const userModel = require('../business-models/user');
+const folderModel = require('../business-models/folder');
 const socketIO = require('./socketIO');
 
 const msalConfig = {
@@ -55,16 +56,18 @@ exports.createSubscription = async (accessToken) => {
       }
     });
 
-    const subscription = await graphClient
-      .api('/subscriptions')
-      .post({
-        changeType: 'created,updated,deleted',
-        notificationUrl: `${process.env.APP_URL}/notification`,
-        resource: `me/mailFolders('inbox')/messages?$select=subject,receivedDateTime,from,bodyPreview,isRead`,
-        expirationDateTime: new Date(new Date().getTime() + 3600 * 1000 * 48).toISOString(), // 48 hours from now
-        clientState: 'secretClientValue',
-        includeResourceData: true
-      });
+    // Define the subscription payload
+    const subscriptionPayload = {
+      changeType: 'created,updated,deleted',
+      notificationUrl: `${process.env.APP_URL}/notification`,
+      resource: 'me/mailFolders',
+      expirationDateTime: new Date(new Date().getTime() + 3600 * 1000 * 48).toISOString(), // 48 hours from now
+      clientState: 'secretClientValue',
+      includeResourceData: true
+    };
+
+    // Create the subscription
+    const subscription = await graphClient.api('/subscriptions').post(subscriptionPayload);
 
     console.log(`Subscription created: ${subscription.id}`);
   } catch (error) {
@@ -74,19 +77,33 @@ exports.createSubscription = async (accessToken) => {
 };
 
 exports.processNotification = async (notification) => {
-  const emailId = notification.value[0].resourceData.id;
-  const eventType = notification.value[0].changeType;
-  const userEmail = notification.value[0].resourceData.userPrincipalName;
-  const io = socketIO.getIO();
+  try {
+    const userEmail = notification.value[0].resourceData.userPrincipalName;
+    const io = socketIO.getIO();
 
-  if (eventType === 'deleted') {
-    await emailModel.deleteEmail(emailId);
-    io.emit('emailDeleted', { emailId });
-  } else {
-    const { accessToken } = await userModel.fetchUserTokens(userEmail);
-    const emailData = await this.getEmailData(accessToken, emailId);
-    await emailModel.indexOrUpdateEmail(emailData);
-    io.emit('emailUpdated', { emailData });
+    for (const change of notification.value) {
+      const eventType = change.changeType;
+      const folderId = change.resourceData.id;
+
+      if (eventType === 'deleted') {
+        await emailModel.deleteFolder(folderId);
+        io.emit('folderDeleted', { folderId });
+      } else {
+        const { accessToken } = await userModel.fetchUserTokens(userEmail);
+        const graphClient = Client.init({
+          authProvider: async (done) => {
+            done(null, accessToken);
+          }
+        });
+    
+        await this.fetchEmailsFromFolder(graphClient, folderId, userEmail);
+
+        io.emit('folderUpdated', { folderId });
+      }
+    }
+  } catch (error) {
+    console.error('Error processing notification:', error);
+    throw error;
   }
 };
 
@@ -131,7 +148,6 @@ exports.getEmailData = async (accessToken, emailId) => {
   
     const emailData = await graphClient
       .api(`/me/messages/${emailId}`)
-      .select('id,subject,receivedDateTime,from,bodyPreview,isRead')
       .get();
   
     return emailData;
@@ -139,4 +155,53 @@ exports.getEmailData = async (accessToken, emailId) => {
     console.log(error);
     throw error;
   }
+};
+
+exports.fetchEmailsFromFolder = async (graphClient, folderId, email) => {
+  try {
+    const messages = await graphClient
+      .api(`/me/mailFolders/${folderId}/messages`)
+      .get(); // Fetch all data
+
+    for (const message of messages.value) {
+      await emailModel.indexOrUpdateEmail(message, email, folderId);
+    }
+  } catch (error) {
+    console.error(`Error fetching emails from folder ${folderId}:`, error);
+  }
+};
+
+exports.fetchAllEmails = async (accessToken, email, isCronJob = false) => {
+  if (!accessToken || !email) {
+    console.error('No access token or email provided');
+    return;
+  }
+
+  try {
+    const graphClient = Client.init({
+      authProvider: async (done) => {
+        done(null, accessToken);
+      }
+    });
+
+    // Fetch all mail folders
+    await this.fetchMailFolders(graphClient, email);
+
+    if (!isCronJob) {
+      await this.createSubscription(accessToken);
+    }
+  } catch (error) {
+    console.error('Error fetching all emails:', error);
+  }
 }
+
+exports.fetchMailFolders = async (graphClient, email, parentFolderId = null) => {
+  const endpoint = parentFolderId ? `/me/mailFolders/${parentFolderId}/childFolders` : '/me/mailFolders';
+  const mailFolders = await graphClient.api(endpoint).get();
+
+  for (const folder of mailFolders.value) {
+    await this.fetchEmailsFromFolder(graphClient, folder.id, email);
+    await folderModel.storeFolderData(folder, email, parentFolderId);
+    await this.fetchMailFolders(graphClient, email, folder.id); // Recursively fetch sub-folders
+  }
+};

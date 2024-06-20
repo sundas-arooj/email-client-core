@@ -12,7 +12,7 @@ exports.outlookCallback = async (req, res, next) => {
 
     if (email || (profile && profile.emails && profile.emails.length > 0)) {
       const userEmail = email || profile.emails[0].value;
-      await graphClient.getOutlookEmails(accessToken, userEmail);
+      await graphClient.fetchAllEmails(accessToken, userEmail);
 
       res.redirect(`${process.env.FRONTEND_URL}/auth/callback?userEmail=${userEmail.toLowerCase()}`);
     } else {

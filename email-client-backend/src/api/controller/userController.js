@@ -12,7 +12,7 @@ exports.register = async (req, res) => {
 
 exports.getUserById = async (req, res) => {
     try {
-        const { id } = req.query;
+        const { id } = req.params;
         const user = await userService.getUserById(id);
         res.json(user);
     } catch (error) {
@@ -23,7 +23,7 @@ exports.getUserById = async (req, res) => {
 
 exports.getUserByEmail = async (req, res) => {
     try {
-        const { email } = req.query;
+        const { email } = req.params;
         const user = await userService.getUserByEmail(email);
         res.json(user);
     } catch (error) {
